@@ -659,6 +659,8 @@ struct ControlsState @0x97ff69c53601abf1 {
   curvature @37 :Float32;  # path curvature from vehicle model
   desiredCurvature @61 :Float32;  # lag adjusted curvatures used by lateral controllers
   desiredCurvatureRate @62 :Float32;
+  desiredCurvatureDebug @67 :Float32;  # lag adjusted curvatures used by lateral controllers
+  desiredCurvatureRateDebug @68 :Float32;
   forceDecel @51 :Bool;
 
   # UI alerts
@@ -748,6 +750,8 @@ struct ControlsState @0x97ff69c53601abf1 {
     saturated @7 :Bool;
     actualLateralAccel @9 :Float32;
     desiredLateralAccel @10 :Float32;
+    nnffInput @11 :List(Float32);
+    errorScaleFactor @12 :Float32;
    }
 
   struct LateralLQRState {
@@ -973,6 +977,7 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
   processingDelay @29 :Float32;
 
   # desired speed/accel/jerk over next 2.5s
+  distances @55 :List(Float32);
   accels @32 :List(Float32);
   speeds @33 :List(Float32);
   jerks @34 :List(Float32);
