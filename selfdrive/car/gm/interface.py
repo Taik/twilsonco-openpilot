@@ -131,7 +131,7 @@ class CarInterface(CarInterfaceBase):
       ret.steerActuatorDelay = 0.2
       
       ret.longitudinalTuning.kpBP = [5., 15., 35.]
-      ret.longitudinalTuning.kpV = [0.8, .9, 0.8]
+      ret.longitudinalTuning.kpV = [0.75, .9, 0.8]
       ret.longitudinalTuning.kiBP = [5., 15., 35.]
       ret.longitudinalTuning.kiV = [0.08, 0.13, 0.13]
 
@@ -237,7 +237,7 @@ class CarInterface(CarInterfaceBase):
   # returns a car.CarState
   def _update(self, c):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_loopback)
-    self.CS = self.sp_update_params(self.CS)
+    self.sp_update_params(self.CS)
     
     t = sec_since_boot()
 

@@ -16,7 +16,7 @@ from system.version import is_release_branch, get_short_branch
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.car.car_helpers import get_car, get_startup_event, get_one_can
 from selfdrive.controls.lib.lane_planner import CAMERA_OFFSET
-from selfdrive.controls.lib.drive_helpers import VCruiseHelper, get_lag_adjusted_curvature
+from selfdrive.controls.lib.drive_helpers import VCruiseHelper, get_lag_adjusted_curvature, get_lag_adjusted_curvature_old
 from selfdrive.controls.lib.latcontrol import LatControl, MIN_LATERAL_CONTROL_SPEED
 from selfdrive.controls.lib.longcontrol import LongControl
 from selfdrive.controls.lib.latcontrol_pid import LatControlPID
@@ -192,6 +192,8 @@ class Controls:
     self.steer_limited = False
     self.desired_curvature = 0.0
     self.desired_curvature_rate = 0.0
+    self.desired_curvature_debug = 0.0
+    self.desired_curvature_rate_debug = 0.0
     self.experimental_mode = False
     self.v_cruise_helper = VCruiseHelper(self.CP)
 
@@ -199,6 +201,7 @@ class Controls:
 
     self.live_torque = self.params.get_bool("LiveTorque")
     self.custom_torque = self.params.get_bool("CustomTorqueLateral")
+    self.nnff_alert_shown = False
 
     # TODO: no longer necessary, aside from process replay
     self.sm['liveParameters'].valid = True
@@ -252,6 +255,16 @@ class Controls:
     # no more events while in dashcam mode
     if self.read_only:
       return
+    
+    if not self.nnff_alert_shown and self.sm.frame % 1000 == 0 and self.CP.lateralTuning.which() == 'torque':
+      self.nnff_alert_shown = True
+      if self.LaC.use_nn:
+        if self.CI.ff_nn_model.test_passed:
+          self.events.add(EventName.torqueNNFFLoadSuccess)
+        else:
+          self.events.add(EventName.torqueNNFFLoadFailure)
+      else: 
+        self.events.add(EventName.torqueNNFFNotLoaded)
 
     # Block resume if cruise never previously enabled
     resume_pressed = any(be.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for be in CS.buttonEvents)
@@ -653,14 +666,20 @@ class Controls:
       actuators.accel = self.LoC.update(CC.longActive, CS, long_plan, pid_accel_limits, t_since_plan, self.experimental_mode)
 
       # Steering PID loop and lateral MPC
-      self.desired_curvature, self.desired_curvature_rate = get_lag_adjusted_curvature(self.CP, CS.vEgo,
+      self.desired_curvature_debug, self.desired_curvature_rate_debug = get_lag_adjusted_curvature_old(self.CP, CS.vEgo,
                                                                                        lat_plan.psis,
                                                                                        lat_plan.curvatures,
                                                                                        lat_plan.curvatureRates)
+      self.desired_curvature, self.desired_curvature_rate = get_lag_adjusted_curvature(self.CP, CS.vEgo,
+                                                                                       lat_plan.psis,
+                                                                                       lat_plan.curvatures,
+                                                                                       lat_plan.curvatureRates,
+                                                                                       long_plan.distances)
       actuators.steer, actuators.steeringAngleDeg, lac_log = self.LaC.update(CC.latActive, CS, self.VM, lp,
                                                                              self.last_actuators, self.steer_limited, self.desired_curvature,
                                                                              self.desired_curvature_rate, self.sm['liveLocationKalman'],
-                                                                             lat_plan=lat_plan)
+                                                                             lat_plan=lat_plan,
+                                                                             model_data=self.sm['modelV2'])
       actuators.curvature = self.desired_curvature
     else:
       lac_log = log.ControlsState.LateralDebugState.new_message()
@@ -825,6 +844,8 @@ class Controls:
     controlsState.curvature = curvature
     controlsState.desiredCurvature = self.desired_curvature
     controlsState.desiredCurvatureRate = self.desired_curvature_rate
+    controlsState.desiredCurvatureDebug = self.desired_curvature_debug
+    controlsState.desiredCurvatureRateDebug = self.desired_curvature_rate_debug
     controlsState.state = self.state
     controlsState.engageable = not self.events.any(ET.NO_ENTRY)
     controlsState.longControlState = self.LoC.long_control_state

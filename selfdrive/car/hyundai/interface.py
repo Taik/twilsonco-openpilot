@@ -77,6 +77,7 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.84
       ret.steerRatio = 13.27 * 1.15   # 15% higher at the center seems reasonable
       tire_stiffness_factor = 0.65
+      ret.nnffFingerprint = CAR.SONATA
     elif candidate == CAR.SONATA_LF:
       ret.mass = 4497. * CV.LB_TO_KG
       ret.wheelbase = 2.804
@@ -196,6 +197,7 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 3.0
       ret.steerRatio = 16.
       tire_stiffness_factor = 0.65
+      ret.lateralTuning.torque.kf = 1.2
     elif candidate == CAR.KIA_SPORTAGE_HYBRID_5TH_GEN:
       ret.mass = 1767. + STD_CARGO_KG  # SX Prestige trim support only
       ret.wheelbase = 2.756
