@@ -153,12 +153,13 @@ class LateralPlanner:
         return True
       # only while lane change is off
       elif self.DH.lane_change_state == LaneChangeState.off:
+        probability_threshold = 0.85
         # laneline probability too low, we switch to laneless mode
-        if (self.LP.lll_prob + self.LP.rll_prob) / 2 < 0.3 \
+        if (self.LP.lll_prob + self.LP.rll_prob) / 2 < probability_threshold \
           or ((longitudinal_plan.visionCurrentLatAcc > 1.0 or longitudinal_plan.visionMaxPredLatAcc > 1.4)
            and self.vision_curve_laneless):
           self.dynamic_lane_profile_status_buffer = True
-        if (self.LP.lll_prob + self.LP.rll_prob) / 2 > 0.5 \
+        if (self.LP.lll_prob + self.LP.rll_prob) / 2 > probability_threshold \
           and ((longitudinal_plan.visionCurrentLatAcc < 0.6 and longitudinal_plan.visionMaxPredLatAcc < 0.7)
            or not self.vision_curve_laneless):
           self.dynamic_lane_profile_status_buffer = False
