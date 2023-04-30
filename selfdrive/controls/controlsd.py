@@ -200,6 +200,7 @@ class Controls:
 
     self.live_torque = self.params.get_bool("LiveTorque")
     self.custom_torque = self.params.get_bool("CustomTorqueLateral")
+    self.nnff_alert_shown = False
 
     # TODO: no longer necessary, aside from process replay
     self.sm['liveParameters'].valid = True
@@ -243,11 +244,6 @@ class Controls:
     # Add startup event
     if self.startup_event is not None:
       self.events.add(self.startup_event)
-      if self.CP.lateralTuning.which() == 'torque' and self.LaC.use_nn:
-        if self.CI.ff_nn_model.test_passed:
-          self.events.add(EventName.torqueNNFFLoadSuccess)
-        else:
-          self.events.add(EventName.torqueNNFFLoadFailure)
       self.startup_event = None
 
     # Don't add any more events if not initialized
@@ -258,6 +254,13 @@ class Controls:
     # no more events while in dashcam mode
     if self.read_only:
       return
+    
+    if not self.nnff_alert_shown and self.CP.lateralTuning.which() == 'torque' and self.LaC.use_nn:
+      self.nnff_alert_shown = True
+      if self.CI.ff_nn_model.test_passed:
+        self.events.add(EventName.torqueNNFFLoadSuccess)
+      else:
+        self.events.add(EventName.torqueNNFFLoadFailure)
 
     # Block resume if cruise never previously enabled
     resume_pressed = any(be.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for be in CS.buttonEvents)
