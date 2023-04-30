@@ -249,8 +249,10 @@ class CarInterfaceBase(ABC):
       self.ff_nn_model = FluxModel(self.get_nn_ff_model_path(car))
       cloudlog.warning(f"Lateral torque NN FF model loaded")
       cloudlog.warning(self.ff_nn_model.summary(do_print=False))
+      return True
     else:
       cloudlog.warning(f"No lateral torque NN FF model found for {car}")
+      return False
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
