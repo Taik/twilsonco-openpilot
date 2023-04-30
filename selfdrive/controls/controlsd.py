@@ -243,6 +243,11 @@ class Controls:
     # Add startup event
     if self.startup_event is not None:
       self.events.add(self.startup_event)
+      if self.CP.lateralTuning.which() == 'torque' and self.LaC.use_nn:
+        if self.CI.ff_nn_model.test_passed:
+          self.events.add(EventName.torqueNNFFLoadSuccess)
+        else:
+          self.events.add(EventName.torqueNNFFLoadFailure)
       self.startup_event = None
 
     # Don't add any more events if not initialized
@@ -655,7 +660,8 @@ class Controls:
       actuators.steer, actuators.steeringAngleDeg, lac_log = self.LaC.update(CC.latActive, CS, self.VM, lp,
                                                                              self.last_actuators, self.steer_limited, self.desired_curvature,
                                                                              self.desired_curvature_rate, self.sm['liveLocationKalman'],
-                                                                             lat_plan=lat_plan)
+                                                                             lat_plan=lat_plan,
+                                                                             model_data=self.sm['modelV2'])
       actuators.curvature = self.desired_curvature
     else:
       lac_log = log.ControlsState.LateralDebugState.new_message()
