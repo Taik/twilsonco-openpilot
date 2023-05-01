@@ -1078,7 +1078,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
       "e2e torque controller loaded successfully",
       "",
       AlertStatus.userPrompt, AlertSize.small,
-      Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 20.0),
+      Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 6.0),
   },
   
   EventName.torqueNNFFLoadFailure: {
@@ -1086,6 +1086,6 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
       "e2e torque controller failed to load!",
       "",
       AlertStatus.userPrompt, AlertSize.small,
-      Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 20.0),
+      Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 6.0),
   },
 }
