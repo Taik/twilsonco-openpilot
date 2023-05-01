@@ -50,7 +50,7 @@ class LatControlTorque(LatControl):
       self.lat_accel_deque = deque(maxlen=20) # past data for NNFF model should be at -0.2s
       self.lat_jerk_deque = deque(maxlen=20)
       self.roll_deque = deque(maxlen=20)
-    self.error_downscale = 3.0
+    self.error_downscale = 5.0
     
 
     self.param_s = Params()
