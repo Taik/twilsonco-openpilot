@@ -128,7 +128,7 @@ class CarInterface(CarInterfaceBase):
       ret.centerToFront = ret.wheelbase * 0.45  # Volt Gen 1, TODO corner weigh
 
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
-      ret.steerActuatorDelay = 0.2
+      ret.steerActuatorDelay = 0.0
       
       ret.longitudinalTuning.kpBP = [5., 15., 35.]
       ret.longitudinalTuning.kpV = [0.8, .9, 0.8]
