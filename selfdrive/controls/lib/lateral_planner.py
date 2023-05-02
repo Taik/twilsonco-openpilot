@@ -16,13 +16,13 @@ LaneChangeState = log.LateralPlan.LaneChangeState
 
 PATH_COST = 1.0
 LATERAL_MOTION_COST = 0.11
-LATERAL_ACCEL_COST = 0.0
-LATERAL_JERK_COST = 0.04
+LATERAL_ACCEL_COST = 0.2
+LATERAL_JERK_COST = 0.06
 # Extreme steering rate is unpleasant, even
 # when it does not cause bad jerk.
 # TODO this cost should be lowered when low
 # speed lateral control is stable on all cars
-STEERING_RATE_COST = 50.0
+STEERING_RATE_COST = 700.0
 
 
 class LateralPlanner:
