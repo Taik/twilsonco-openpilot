@@ -134,6 +134,7 @@ struct CarEvent @0x9b1657f34caf3ad3 {
     autoHoldActivated @132;
     torqueNNFFLoadSuccess @133;
     torqueNNFFLoadFailure @134;
+    torqueNNFFNotLoaded @135;
 
     radarCanErrorDEPRECATED @15;
     communityFeatureDisallowedDEPRECATED @62;

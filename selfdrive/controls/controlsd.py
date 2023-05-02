@@ -255,12 +255,15 @@ class Controls:
     if self.read_only:
       return
     
-    if not self.nnff_alert_shown and self.sm.frame % 1000 == 0 and self.CP.lateralTuning.which() == 'torque' and self.LaC.use_nn:
+    if not self.nnff_alert_shown and self.sm.frame % 1000 == 0 and self.CP.lateralTuning.which() == 'torque':
       self.nnff_alert_shown = True
-      if self.CI.ff_nn_model.test_passed:
-        self.events.add(EventName.torqueNNFFLoadSuccess)
-      else:
-        self.events.add(EventName.torqueNNFFLoadFailure)
+      if self.LaC.use_nn
+        if self.CI.ff_nn_model.test_passed:
+          self.events.add(EventName.torqueNNFFLoadSuccess)
+        else:
+          self.events.add(EventName.torqueNNFFLoadFailure)
+      else: 
+        self.events.add(EventName.torqueNNFFNotLoaded)
 
     # Block resume if cruise never previously enabled
     resume_pressed = any(be.type in (ButtonType.accelCruise, ButtonType.resumeCruise) for be in CS.buttonEvents)
