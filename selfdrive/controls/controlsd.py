@@ -257,7 +257,7 @@ class Controls:
     
     if not self.nnff_alert_shown and self.sm.frame % 1000 == 0 and self.CP.lateralTuning.which() == 'torque':
       self.nnff_alert_shown = True
-      if self.LaC.use_nn
+      if self.LaC.use_nn:
         if self.CI.ff_nn_model.test_passed:
           self.events.add(EventName.torqueNNFFLoadSuccess)
         else:
