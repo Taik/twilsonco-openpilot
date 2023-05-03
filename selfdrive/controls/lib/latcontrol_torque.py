@@ -48,7 +48,7 @@ class LatControlTorque(LatControl):
       self.nnff_time_offset = CP.steerActuatorDelay + 0.2
       self.nnff_future_times = [i + self.nnff_time_offset for i in [0.3, 0.5, 0.9, 1.7]]
       self.lat_accel_deque = deque(maxlen=20) # past data for NNFF model should be at -0.2s
-    self.error_downscale = 5.0
+    self.error_downscale = 6.0
     
 
     self.param_s = Params()
