@@ -2,6 +2,7 @@ import math
 
 from cereal import log
 from collections import deque
+from common.filter_simple import FirstOrderFilter
 from common.numpy_fast import interp, sign
 from common.params import Params
 from selfdrive.controls.lib.drive_helpers import apply_deadzone
@@ -49,6 +50,7 @@ class LatControlTorque(LatControl):
       self.nnff_future_times = [i + self.nnff_time_offset for i in [0.3, 0.5, 0.9, 1.7]]
       self.lat_accel_deque = deque(maxlen=20) # past data for NNFF model should be at -0.2s
     self.error_downscale = 6.0
+    self.error_scale_factor = FirstOrderFilter(1.0, 0.5, 0.01)
     
 
     self.param_s = Params()
@@ -100,9 +102,15 @@ class LatControlTorque(LatControl):
       setpoint = desired_lateral_accel + low_speed_factor * desired_curvature
       measurement = actual_lateral_accel + low_speed_factor * actual_curvature
       error = setpoint - measurement
+      
       max_future_lateral_accel = max([i * CS.vEgo**2 for i in list(lat_plan.curvatures)[LAT_PLAN_MIN_IDX:16]] + [desired_lateral_accel], key=lambda x: abs(x))
       error_scale_factor = 1.0 / (1.0 + min(apply_deadzone(abs(max_future_lateral_accel), 0.3) * self.error_downscale, self.error_downscale - 1))
-      error *= error_scale_factor
+      if error_scale_factor < self.error_scale_factor.x:
+        self.error_scale_factor.x = error_scale_factor
+      else:
+        self.error_scale_factor.update(error_scale_factor)
+      error *= self.error_scale_factor.x
+      
       gravity_adjusted_lateral_accel = desired_lateral_accel - params.roll * ACCELERATION_DUE_TO_GRAVITY
       torque_from_setpoint = self.torque_from_lateral_accel(setpoint, self.torque_params, setpoint,
                                                      lateral_accel_deadzone, friction_compensation=False)
