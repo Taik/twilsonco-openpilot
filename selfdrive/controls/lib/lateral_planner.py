@@ -14,9 +14,9 @@ from cereal import log
 LaneChangeState = log.LateralPlan.LaneChangeState
 
 
-PATH_COST = 1.0
+PATH_COST = 1.1
 LATERAL_MOTION_COST = 0.11
-LATERAL_ACCEL_COST = 0.5
+LATERAL_ACCEL_COST = 0.6
 LATERAL_JERK_COST = 0.05
 # Extreme steering rate is unpleasant, even
 # when it does not cause bad jerk.
