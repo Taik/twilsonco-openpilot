@@ -135,7 +135,7 @@ class LatControlTorque(LatControl):
         
         lat_accel_error_neg = actual_lateral_accel - desired_lateral_accel
         
-        nnff_input = [CS.vEgo, desired_lateral_accel, desired_lateral_jerk, roll] + \
+        nnff_input = [CS.vEgo, desired_lateral_accel, roll] + \
                       [past_lat_accel_delta, lat_accel_error_neg] + delta_lat_accel_future
         ff = self.torque_from_nn(nnff_input)
       else:
