@@ -2,11 +2,8 @@ import math
 
 from cereal import log
 from common.numpy_fast import interp
-<<<<<<< HEAD
 from common.params import Params
-=======
 from selfdrive.controls.lib.drive_helpers import apply_deadzone
->>>>>>> 06858c53a (Torque: jerk error PID D & less error in curves)
 from selfdrive.controls.lib.latcontrol import LatControl
 from selfdrive.controls.lib.pid import PIDController
 from selfdrive.controls.lib.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
