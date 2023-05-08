@@ -24,7 +24,7 @@ from selfdrive.modeld.constants import T_IDXS
 
 LOW_SPEED_X = [0, 10, 20, 30]
 LOW_SPEED_Y = [15, 13, 10, 5]
-LOW_SPEED_Y_NNFF = [13, 0, 0, 0]
+LOW_SPEED_Y_NNFF = [13, 5, 0, 0]
 
 LAT_PLAN_MIN_IDX = 5
 
@@ -49,7 +49,7 @@ class LatControlTorque(LatControl):
       self.nnff_time_offset = CP.steerActuatorDelay + 0.2
       self.nnff_future_times = [i + self.nnff_time_offset for i in [0.3, 0.5, 0.9, 1.7]]
       self.lat_accel_deque = deque(maxlen=20) # past data for NNFF model should be at -0.2s
-    self.error_downscale = 6.0
+    self.error_downscale = 4.0
     self.error_scale_factor = FirstOrderFilter(1.0, 0.5, 0.01)
     
 
@@ -110,6 +110,7 @@ class LatControlTorque(LatControl):
       else:
         self.error_scale_factor.update(error_scale_factor)
       error *= self.error_scale_factor.x
+      error_rate=((desired_lateral_jerk - actual_lateral_jerk) * self.error_scale_factor.x) if self.use_steering_angle else 0.0
       
       gravity_adjusted_lateral_accel = desired_lateral_accel - params.roll * ACCELERATION_DUE_TO_GRAVITY
       torque_from_setpoint = self.torque_from_lateral_accel(setpoint, self.torque_params, setpoint,
