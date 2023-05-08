@@ -51,7 +51,7 @@ class LatControlTorque(LatControl):
       self.nnff_time_offset = CP.steerActuatorDelay + 0.2
       future_times = [0.3, 0.5, 0.9, 1.7]
       self.nnff_future_times = [i + self.nnff_time_offset for i in future_times]
-      self.nnff_lat_accels_filtered = [FirstOrderFilter(0.0, 0.3 + abs(i*0.2), 0.01) for i in [0.0] + future_times] # filter the desired and future lateral accel values
+      self.nnff_lat_accels_filtered = [FirstOrderFilter(0.0, 0.3 + abs(i*0.3), 0.01) for i in [0.0] + future_times] # filter the desired and future lateral accel values
       self.jerk_approx_denom = 1.0 / self.nnff_time_offset
       self.lat_accel_deque = deque(maxlen=20) # past data for NNFF model should be at -0.2s
 
