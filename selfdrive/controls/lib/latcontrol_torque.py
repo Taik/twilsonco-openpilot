@@ -130,7 +130,7 @@ class LatControlTorque(LatControl):
         for i,(k, v) in enumerate(zip(future_curvatures, future_speeds)):
           self.nnff_lat_accels_filtered[i+1].update((k * v**2) - self.nnff_lat_accels_filtered[0].x)
         lat_accels_filtered = [i.x for i in self.nnff_lat_accels_filtered]
-        roll = params.roll
+        roll = -params.roll
         
         friction = self.torque_from_lateral_accel(0.0, self.torque_params,
                                           desired_lateral_accel - actual_lateral_accel,
