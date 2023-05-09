@@ -53,6 +53,7 @@ class LatControlTorque(LatControl):
       self.nnff_future_times = [i + self.nnff_time_offset for i in future_times]
       self.nnff_lat_accels_filtered = [FirstOrderFilter(0.0, 0.3, 0.01) for i in [0.0] + future_times] # filter the desired and future lateral accel values
       self.nnff_lat_jerk_filtered = FirstOrderFilter(0.0, 0.3, 0.01) # filter the desired lateral jerk value
+      self.nnff_alpha_up_down = [0.35, 0.05] # for increasing/decreasing magnitude of lat accel/jerk
       self.lat_accel_deque = deque(maxlen=20) # past data for NNFF model should be at -0.2s
 
 
@@ -127,6 +128,11 @@ class LatControlTorque(LatControl):
                                             + interp(t, T_IDXS, model_data.velocity.y)**2) \
                                               for t in self.nnff_future_times]
         future_curvatures = [interp(t, T_IDXS, lat_plan.curvatures) for t in self.nnff_future_times]
+        
+        alpha = self.nnff_alpha_up_down[0 if abs(desired_lateral_accel) > self.nnff_lat_accels_filtered[0].x else 1]
+        self.nnff_lat_jerk_filtered.update_alpha(alpha)
+        for i in self.nnff_lat_accels_filtered:
+          i.update_alpha(alpha)
         
         self.nnff_lat_accels_filtered[0].update(desired_lateral_accel)
         self.nnff_lat_jerk_filtered.update(desired_lateral_jerk)
