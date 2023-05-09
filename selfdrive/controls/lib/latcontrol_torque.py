@@ -37,7 +37,7 @@ class LatControlTorque(LatControl):
     self.torque_from_lateral_accel = CI.torque_from_lateral_accel()
     self.use_steering_angle = self.torque_params.useSteeringAngle
     self.steering_angle_deadzone_deg = self.torque_params.steeringAngleDeadzoneDeg
-    self.error_downscale = 5.0
+    self.error_downscale = 4.0
     self.error_scale_factor = FirstOrderFilter(1.0, 2.0, 0.01)
     self.use_nn = CI.initialize_ff_nn(CP.carFingerprint)
     if self.use_nn:
@@ -51,7 +51,7 @@ class LatControlTorque(LatControl):
       self.nnff_time_offset = CP.steerActuatorDelay + 0.2
       future_times = [0.3, 0.5, 0.9, 1.7]
       self.nnff_future_times = [i + self.nnff_time_offset for i in future_times]
-      self.nnff_lat_accels_filtered = [FirstOrderFilter(0.0, 0.25, 0.01) for i in [0.0] + future_times] # filter the desired and future lateral accel values
+      self.nnff_lat_accels_filtered = [FirstOrderFilter(0.0, 0.2, 0.01) for i in [0.0] + future_times] # filter the desired and future lateral accel values
       self.jerk_approx_denom = 1.0 / self.nnff_time_offset
 
 
