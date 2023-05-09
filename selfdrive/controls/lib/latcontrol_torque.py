@@ -53,8 +53,9 @@ class LatControlTorque(LatControl):
       self.nnff_future_times = [i + self.nnff_time_offset for i in future_times]
       self.nnff_lat_accels_filtered = [FirstOrderFilter(0.0, 0.0, 0.01) for i in [0.0] + future_times] # filter the desired and future lateral accel values
       self.nnff_lat_jerk_filtered = FirstOrderFilter(0.0, 0.0, 0.01) # filter the desired lateral jerk value
-      self.nnff_alpha_up_down = [0.25, 0.15] # for increasing/decreasing magnitude of lat accel/jerk
-
+      self.nnff_alpha_up_down = [0.1, 0.1] # for increasing/decreasing magnitude of lat accel/jerk
+      self.nnff_kf_scale_bp = [0.0, 1.5]
+      self.nnff_kf_scale_v = [1.0, 0.8]
 
     self.param_s = Params()
     self.custom_torque = self.param_s.get_bool("CustomTorqueLateral")
@@ -147,7 +148,9 @@ class LatControlTorque(LatControl):
         
         nnff_input = [CS.vEgo, lat_accels_filtered[0], self.nnff_lat_jerk_filtered.x, roll] \
                       + lat_accels_filtered[1:]
-        ff = friction + self.torque_from_nn(nnff_input)
+        ff = self.torque_from_nn(nnff_input)
+        ff *= interp(abs(lat_accels_filtered[0]), self.nnff_kf_scale_bp, self.nnff_kf_scale_v)
+        ff += friction
       else:
         ff = self.torque_from_lateral_accel(gravity_adjusted_lateral_accel, self.torque_params,
                                           desired_lateral_accel - actual_lateral_accel,
