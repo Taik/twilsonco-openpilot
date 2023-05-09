@@ -55,7 +55,7 @@ class LatControlTorque(LatControl):
       self.nnff_lat_jerk_filtered = FirstOrderFilter(0.0, 0.0, 0.01) # filter the desired lateral jerk value
       self.nnff_alpha_up_down = [0.1, 0.1] # for increasing/decreasing magnitude of lat accel/jerk
       self.nnff_kf_scale_bp = [0.0, 1.5]
-      self.nnff_kf_scale_v = [1.0, 0.8]
+      self.nnff_kf_scale_v = [1.0, 0.7]
 
     self.param_s = Params()
     self.custom_torque = self.param_s.get_bool("CustomTorqueLateral")
