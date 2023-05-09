@@ -38,7 +38,7 @@ class LatControlTorque(LatControl):
     self.use_steering_angle = self.torque_params.useSteeringAngle
     self.steering_angle_deadzone_deg = self.torque_params.steeringAngleDeadzoneDeg
     self.error_downscale = 10.0
-    self.error_scale_factor = FirstOrderFilter(1.0, 0.5, 0.01)
+    self.error_scale_factor = FirstOrderFilter(1.0, 2.0, 0.01)
     self.use_nn = CI.initialize_ff_nn(CP.carFingerprint)
     if self.use_nn:
       self.torque_from_nn = CI.get_ff_nn
@@ -102,23 +102,24 @@ class LatControlTorque(LatControl):
       low_speed_factor = interp(CS.vEgo, LOW_SPEED_X, LOW_SPEED_Y_NNFF if self.use_nn else LOW_SPEED_Y)**2
       setpoint = desired_lateral_accel + low_speed_factor * desired_curvature
       measurement = actual_lateral_accel + low_speed_factor * actual_curvature
-      error = setpoint - measurement
-      
-      max_future_lateral_accel = max([i * CS.vEgo**2 for i in list(lat_plan.curvatures)[LAT_PLAN_MIN_IDX:16]] + [desired_lateral_accel], key=lambda x: abs(x))
-      error_scale_factor = 1.0 / (1.0 + min(apply_deadzone(abs(max_future_lateral_accel), 0.5) * self.error_downscale, self.error_downscale - 1))
-      if error_scale_factor < self.error_scale_factor.x:
-        self.error_scale_factor.x = error_scale_factor
-      else:
-        self.error_scale_factor.update(error_scale_factor)
-      error *= self.error_scale_factor.x
-      error_rate=((desired_lateral_jerk - actual_lateral_jerk) * self.error_scale_factor.x) if self.use_steering_angle else 0.0
-      
       gravity_adjusted_lateral_accel = desired_lateral_accel - params.roll * ACCELERATION_DUE_TO_GRAVITY
       torque_from_setpoint = self.torque_from_lateral_accel(setpoint, self.torque_params, setpoint,
                                                      lateral_accel_deadzone, friction_compensation=False)
       torque_from_measurement = self.torque_from_lateral_accel(measurement, self.torque_params, measurement,
                                                      lateral_accel_deadzone, friction_compensation=False)
-      pid_log.error = torque_from_setpoint - torque_from_measurement
+      
+      # error downscaling before entering curves
+      max_future_lateral_accel = max([abs(i) * CS.vEgo**2 for i in list(lat_plan.curvatures)[LAT_PLAN_MIN_IDX:16]] + [abs(desired_lateral_accel)])
+      error_scale_factor = 1.0 / (1.0 + min(apply_deadzone(max_future_lateral_accel, 0.5) * self.error_downscale, self.error_downscale - 1))
+      if error_scale_factor < self.error_scale_factor.x:
+        self.error_scale_factor.x = error_scale_factor
+      else:
+        self.error_scale_factor.update(error_scale_factor)
+      error_rate=((desired_lateral_jerk - actual_lateral_jerk) * self.error_scale_factor.x) if self.use_steering_angle else 0.0
+      error = torque_from_setpoint - torque_from_measurement
+      error *= self.error_scale_factor.x
+      pid_log.error = error
+      
       if self.use_nn:
         # prepare input data for NNFF model
         future_speeds = [math.sqrt(interp(t, T_IDXS, model_data.velocity.x)**2 \
