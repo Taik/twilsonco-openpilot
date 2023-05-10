@@ -49,13 +49,13 @@ class LatControlTorque(LatControl):
       # Past value is computed using observed car lat accel, jerk, and roll
       # actual current values are passed as the -0.3s value, the desired values are passed as the actual lat accel etc values, and the future values are interpolated from predicted planner/model data
       self.nnff_time_offset = CP.steerActuatorDelay + 0.2
-      future_times = [0.2, 0.4]
+      future_times = [0.3, 0.7]
       self.nnff_future_times = [i + self.nnff_time_offset for i in future_times]
       self.nnff_lat_accels_filtered = [FirstOrderFilter(0.0, 0.0, 0.01) for i in [0.0] + future_times] # filter the desired and future lateral accel values
       self.nnff_alpha_up_down = [0.3, 0.15] # for increasing/decreasing magnitude of lat accel/jerk
       # Scale down desired lateral acceleration under moderate curvature to prevent cutting corners.
-      self.nnff_la_scale_k_bp = [0.001, 0.005, 0.02, 0.06, 0.1] 
-      self.nnff_la_scale_k_v = [1.0, 0.9, 0.8, 0.8, 1.0]
+      self.nnff_la_scale_k_bp = [0.001, 0.005, 0.06, 0.1] 
+      self.nnff_la_scale_k_v = [1.0, 0.75, 0.75, 1.0]
       # At very low speeds, stop downscaling lateral accel to still allow for hard turns.
       # We'll do this by taking the max of the two scaling factors.
       self.nnff_la_scale_v_bp = [6.0, 10.0]
