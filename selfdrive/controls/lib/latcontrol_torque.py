@@ -49,13 +49,12 @@ class LatControlTorque(LatControl):
       # Past value is computed using observed car lat accel, jerk, and roll
       # actual current values are passed as the -0.3s value, the desired values are passed as the actual lat accel etc values, and the future values are interpolated from predicted planner/model data
       self.nnff_time_offset = CP.steerActuatorDelay + 0.2
-      future_times = [0.3, 0.5, 0.9, 1.7]
+      future_times = [0.2, 0.4]
       self.nnff_future_times = [i + self.nnff_time_offset for i in future_times]
-      self.nnff_lat_accels_filtered = [FirstOrderFilter(0.0, 0.0, 0.01) for i in [0.0] + future_times] # filter the desired and future lateral accel values
       self.nnff_lat_jerk_filtered = FirstOrderFilter(0.0, 0.0, 0.01) # filter the desired lateral jerk value
-      self.nnff_alpha_up_down = [0.1, 0.1] # for increasing/decreasing magnitude of lat accel/jerk
+      self.nnff_alpha_up_down = [0.2, 0.2] # for increasing/decreasing magnitude of lat accel/jerk
       self.nnff_kf_scale_bp = [0.3, 1.0]
-      self.nnff_kf_scale_v = [1.0, 0.8]
+      self.nnff_kf_scale_v = [1.0, 1.0]
 
     self.param_s = Params()
     self.custom_torque = self.param_s.get_bool("CustomTorqueLateral")
@@ -130,12 +129,10 @@ class LatControlTorque(LatControl):
         future_curvatures = [interp(t, T_IDXS, lat_plan.curvatures) for t in self.nnff_future_times]
         
         alpha = self.nnff_alpha_up_down[0 if abs(desired_lateral_accel) > self.nnff_lat_accels_filtered[0].x else 1]
-        self.nnff_lat_jerk_filtered.update_alpha(alpha)
         for i in self.nnff_lat_accels_filtered:
           i.update_alpha(alpha)
         
         self.nnff_lat_accels_filtered[0].update(desired_lateral_accel)
-        self.nnff_lat_jerk_filtered.update(desired_lateral_jerk)
         for i,(k, v) in enumerate(zip(future_curvatures, future_speeds)):
           self.nnff_lat_accels_filtered[i+1].update((k * v**2) - self.nnff_lat_accels_filtered[0].x)
         lat_accels_filtered = [i.x for i in self.nnff_lat_accels_filtered]
@@ -146,7 +143,7 @@ class LatControlTorque(LatControl):
                                           lateral_accel_deadzone, friction_compensation=True)
         friction *= self.error_scale_factor.x
         
-        nnff_input = [CS.vEgo, lat_accels_filtered[0], self.nnff_lat_jerk_filtered.x, roll] \
+        nnff_input = [CS.vEgo, lat_accels_filtered[0], roll] \
                       + lat_accels_filtered[1:]
         ff = self.torque_from_nn(nnff_input)
         ff *= interp(abs(lat_accels_filtered[0]), self.nnff_kf_scale_bp, self.nnff_kf_scale_v)
