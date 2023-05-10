@@ -52,7 +52,7 @@ class LatControlTorque(LatControl):
       future_times = [0.2, 0.4]
       self.nnff_future_times = [i + self.nnff_time_offset for i in future_times]
       self.nnff_lat_accels_filtered = [FirstOrderFilter(0.0, 0.0, 0.01) for i in [0.0] + future_times] # filter the desired and future lateral accel values
-      self.nnff_alpha_up_down = [0.2, 0.2] # for increasing/decreasing magnitude of lat accel/jerk
+      self.nnff_alpha_up_down = [0.3, 0.15] # for increasing/decreasing magnitude of lat accel/jerk
       self.nnff_kf_scale_bp = [0.3, 1.0]
       self.nnff_kf_scale_v = [1.0, 1.0]
 
