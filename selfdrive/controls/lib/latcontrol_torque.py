@@ -54,8 +54,8 @@ class LatControlTorque(LatControl):
       self.nnff_lat_accels_filtered = [FirstOrderFilter(0.0, 0.0, 0.01) for i in [0.0] + future_times] # filter the desired and future lateral accel values
       self.nnff_alpha_up_down = [0.3, 0.15] # for increasing/decreasing magnitude of lat accel/jerk
       # Scale down desired lateral acceleration under moderate curvature to prevent cutting corners.
-      self.nnff_la_scale_k_bp = [0.001, 0.02, 0.06, 0.1] 
-      self.nnff_la_scale_k_v = [1.0, 0.8, 0.8, 1.0]
+      self.nnff_la_scale_k_bp = [0.001, 0.005, 0.02, 0.06, 0.1] 
+      self.nnff_la_scale_k_v = [1.0, 0.9, 0.8, 0.8, 1.0]
       # At very low speeds, stop downscaling lateral accel to still allow for hard turns.
       # We'll do this by taking the max of the two scaling factors.
       self.nnff_la_scale_v_bp = [6.0, 10.0]
