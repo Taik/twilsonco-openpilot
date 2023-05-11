@@ -119,9 +119,9 @@ class LatControlTorque(LatControl):
           past_lat_jerk = self.lat_jerk_deque[0]
           past_roll = self.roll_deque[0]
         else:
-          past_lat_accel = 0.0
-          past_lat_jerk = 0.0
-          past_roll = 0.0
+          past_lat_accel = actual_lateral_accel
+          past_lat_jerk = actual_lateral_jerk
+          past_roll = roll
         self.lat_accel_deque.append(desired_lateral_accel)
         self.lat_jerk_deque.append(desired_lateral_jerk)
         self.roll_deque.append(roll)
@@ -132,10 +132,14 @@ class LatControlTorque(LatControl):
                                           lateral_accel_deadzone, friction_compensation=True)
         friction *= self.error_scale_factor.x
         
-        nnff_input = [CS.vEgo, actual_lateral_accel, actual_lateral_jerk, roll] \
-                    + [past_lat_accel, desired_lateral_accel,
-                      past_lat_jerk, desired_lateral_jerk,
-                      past_roll, desired_roll]
+        la_offset = 0.5 * (self.nnff_lat_accel_filtered.x - actual_lateral_accel)
+        lj_offset = 0.5 * (self.nnff_lat_jerk_filtered.x - actual_lateral_jerk)
+        roll_offset = 0.5 * (desired_roll - roll)
+        
+        nnff_input = [CS.vEgo, actual_lateral_accel + la_offset, actual_lateral_jerk + lj_offset, roll + roll_offset] \
+                    + [past_lat_accel + la_offset, self.nnff_lat_accel_filtered.x,
+                      past_lat_jerk + lj_offset, self.nnff_lat_jerk_filtered.x,
+                      past_roll + roll_offset, desired_roll]
         ff = self.torque_from_nn(nnff_input)
         ff += friction
 
