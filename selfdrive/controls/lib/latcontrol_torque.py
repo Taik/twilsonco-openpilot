@@ -42,20 +42,20 @@ class LatControlTorque(LatControl):
     self.use_nn = CI.initialize_ff_nn(CP.carFingerprint)
     if self.use_nn:
       self.torque_from_nn = CI.get_ff_nn
-      # NNFF model takes current v_ego, a_ego, lat_accel, lat_jerk, roll, and past/future data
+      # NNFF model takes current v_ego, a_ego, lat_accel, lat_jerk, roll, and past/desired data
       # of lat accel, lat jerk, and roll
-      # Past/future data is relative to current values (i.e. 0.5 means current value + 0.5)
-      # Times are relative to current time at (-0.5, -0.3, 0.3, 0.5, 0.9, 1.7) seconds
       # Past value is computed using observed car lat accel, jerk, and roll
-      # actual current values are passed as the -0.3s value, the desired values are passed as the actual lat accel etc values, and the future values are interpolated from predicted planner/model data
       self.nnff_time_offset = CP.steerActuatorDelay + 0.2
-      future_times = [0.3, 0.7]
-      self.nnff_future_times = [i + self.nnff_time_offset for i in future_times]
-      self.nnff_lat_accels_filtered = [FirstOrderFilter(0.0, 0.0, 0.01) for i in [0.0] + future_times] # filter the desired and future lateral accel values
+      self.nnff_lat_accel_filtered = FirstOrderFilter(0.0, 0.0, 0.01) # filter the desired and future lateral accel values
+      self.nnff_lat_jerk_filtered = FirstOrderFilter(0.0, 0.0, 0.01) # filter the desired and future lateral jerk values
+      history_frames = 30
+      self.lat_accel_deque = deque(maxlen=history_frames)
+      self.lat_jerk_deque = deque(maxlen=history_frames)
+      self.roll_deque = deque(maxlen=history_frames)
       self.nnff_alpha_up_down = [0.3, 0.15] # for increasing/decreasing magnitude of lat accel/jerk
       # Scale down desired lateral acceleration under moderate curvature to prevent cutting corners.
-      self.nnff_la_scale_k_bp = [0.001, 0.005, 0.06, 0.1] 
-      self.nnff_la_scale_k_v = [1.0, 0.75, 0.75, 1.0]
+      self.nnff_la_scale_k_bp = [0.0] 
+      self.nnff_la_scale_k_v = [1.0]
       # At very low speeds, stop downscaling lateral accel to still allow for hard turns.
       # We'll do this by taking the max of the two scaling factors.
       self.nnff_la_scale_v_bp = [6.0, 10.0]
@@ -106,33 +106,36 @@ class LatControlTorque(LatControl):
       lateral_accel_deadzone = curvature_deadzone * CS.vEgo ** 2
       
       if self.use_nn:
-        # prepare input data for NNFF model
-        future_speeds = [CS.vEgo] + [math.sqrt(interp(t, T_IDXS, model_data.velocity.x)**2 \
-                                            + interp(t, T_IDXS, model_data.velocity.y)**2) \
-                                              for t in self.nnff_future_times]
-        future_curvatures = [desired_curvature] + [interp(t, T_IDXS, lat_plan.curvatures) for t in self.nnff_future_times]
-        
-        alpha = self.nnff_alpha_up_down[0 if abs(desired_lateral_accel) > abs(self.nnff_lat_accels_filtered[0].x) else 1]
-        for i,(k, v) in enumerate(zip(future_curvatures, future_speeds)):
-          la_factor = interp(abs(k), self.nnff_la_scale_k_bp, self.nnff_la_scale_k_v)
-          la_factor = max(la_factor, interp(v, self.nnff_la_scale_v_bp, self.nnff_la_scale_v_v))
-          self.nnff_lat_accels_filtered[i].update_alpha(alpha)
-          if i == 0:
-            desired_lateral_accel = la_factor * k * v**2
-            self.nnff_lat_accels_filtered[i].update(desired_lateral_accel)
-          else:
-            self.nnff_lat_accels_filtered[i].update((la_factor * k * v**2) - self.nnff_lat_accels_filtered[0].x)
-          
-        lat_accels_filtered = [i.x for i in self.nnff_lat_accels_filtered]
+        # prepare input data for NNFF model        
         roll = params.roll
+        desired_roll = interp(self.nnff_time_offset, T_IDXS, model_data.orientation.x) + roll
+        alpha = self.nnff_alpha_up_down[0 if abs(desired_lateral_accel) > abs(self.nnff_lat_accels_filtered[0].x) else 1]
+        self.nnff_lat_accel_filtered.update_alpha(alpha)
+        self.nnff_lat_jerk_filtered.update_alpha(alpha)
+        self.nnff_lat_accel_filtered.update(desired_lateral_accel)
+        self.nnff_lat_jerk_filtered.update(desired_lateral_jerk)
+        if len(self.lat_accel_deque) == self.lat_accel_deque.maxlen:
+          past_lat_accel = self.lat_accel_deque[0]
+          past_lat_jerk = self.lat_jerk_deque[0]
+          past_roll = self.roll_deque[0]
+        else:
+          past_lat_accel = 0.0
+          past_lat_jerk = 0.0
+          past_roll = 0.0
+        self.lat_accel_deque.append(desired_lateral_accel)
+        self.lat_jerk_deque.append(desired_lateral_jerk)
+        self.roll_deque.append(roll)
+          
         
         friction = self.torque_from_lateral_accel(0.0, self.torque_params,
                                           desired_lateral_accel - actual_lateral_accel,
                                           lateral_accel_deadzone, friction_compensation=True)
         friction *= self.error_scale_factor.x
         
-        nnff_input = [CS.vEgo, lat_accels_filtered[0], roll] \
-                      + lat_accels_filtered[1:]
+        nnff_input = [CS.vEgo, actual_lateral_accel, actual_lateral_jerk, roll] \
+                    + [past_lat_accel, desired_lateral_accel,
+                      past_lat_jerk, desired_lateral_jerk,
+                      past_roll, desired_roll]
         ff = self.torque_from_nn(nnff_input)
         ff += friction
 
