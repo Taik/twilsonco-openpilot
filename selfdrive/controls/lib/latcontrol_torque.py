@@ -109,7 +109,7 @@ class LatControlTorque(LatControl):
         # prepare input data for NNFF model        
         roll = params.roll
         desired_roll = interp(self.nnff_time_offset, T_IDXS, model_data.orientation.x) + roll
-        alpha = self.nnff_alpha_up_down[0 if abs(desired_lateral_accel) > abs(self.nnff_lat_accels_filtered[0].x) else 1]
+        alpha = self.nnff_alpha_up_down[0 if abs(desired_lateral_accel) > abs(self.nnff_lat_accel_filtered.x) else 1]
         self.nnff_lat_accel_filtered.update_alpha(alpha)
         self.nnff_lat_jerk_filtered.update_alpha(alpha)
         self.nnff_lat_accel_filtered.update(desired_lateral_accel)
