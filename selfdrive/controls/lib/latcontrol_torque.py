@@ -128,15 +128,10 @@ class LatControlTorque(LatControl):
         self.nnff_lat_jerk_filtered.update(desired_lateral_jerk)
         roll = params.roll
         
-        if len(self.lat_accel_deque) == self.lat_accel_deque.maxlen:
-          delta_lat_accel = self.nnff_lat_accel_filtered.x - self.lat_accel_deque[0]
-          delta_lat_jerk = self.nnff_lat_jerk_filtered.x - self.lat_jerk_deque[0]
-        else:
-          delta_lat_accel = 0.0
-          delta_lat_jerk = 0.0
         self.lat_accel_deque.append(self.nnff_lat_accel_filtered.x)
         self.lat_jerk_deque.append(self.nnff_lat_jerk_filtered.x)
-        
+        delta_lat_accel = self.nnff_lat_accel_filtered.x - self.lat_accel_deque[0]
+        delta_lat_jerk = self.nnff_lat_jerk_filtered.x - self.lat_jerk_deque[0]
         delta_roll = interp(self.nnff_time_offset, T_IDXS, model_data.orientation.x)
           
         friction = self.torque_from_lateral_accel(0.0, self.torque_params,
