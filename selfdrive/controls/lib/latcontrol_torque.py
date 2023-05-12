@@ -51,7 +51,6 @@ class LatControlTorque(LatControl):
       history_frames = 30
       self.lat_accel_deque = deque(maxlen=history_frames)
       self.lat_jerk_deque = deque(maxlen=history_frames)
-      self.roll_deque = deque(maxlen=history_frames)
       self.nnff_alpha_up_down = [0.3, 0.15] # for increasing/decreasing magnitude of lat accel/jerk
       # Scale down desired lateral acceleration under moderate curvature to prevent cutting corners.
 
@@ -127,10 +126,17 @@ class LatControlTorque(LatControl):
         self.nnff_lat_jerk_filtered.update_alpha(alpha)
         self.nnff_lat_accel_filtered.update(desired_lateral_accel)
         self.nnff_lat_jerk_filtered.update(desired_lateral_jerk)
-        
         roll = params.roll
-        delta_lat_accel = self.nnff_lat_accel_filtered.x - actual_lateral_accel
-        delta_lat_jerk = self.nnff_lat_jerk_filtered.x - actual_lateral_jerk
+        
+        if len(self.lat_accel_deque) == self.lat_accel_deque.maxlen:
+          delta_lat_accel = self.nnff_lat_accel_filtered.x - self.lat_accel_deque[0]
+          delta_lat_jerk = self.nnff_lat_jerk_filtered.x - self.lat_jerk_deque[0]
+        else:
+          delta_lat_accel = 0.0
+          delta_lat_jerk = 0.0
+        self.lat_accel_deque.append(self.nnff_lat_accel_filtered.x)
+        self.lat_jerk_deque.append(self.nnff_lat_jerk_filtered.x)
+        
         delta_roll = interp(self.nnff_time_offset, T_IDXS, model_data.orientation.x)
           
         friction = self.torque_from_lateral_accel(0.0, self.torque_params,
