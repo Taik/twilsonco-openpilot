@@ -129,7 +129,7 @@ class LatControlTorque(LatControl):
                                               for t in self.nnff_future_times]
         future_curvatures = [desired_curvature] + [interp(t, T_IDXS, lat_plan.curvatures) for t in self.nnff_future_times]
         future_curvature_rates = [desired_curvature_rate] + [interp(t, T_IDXS, lat_plan.curvatureRates) for t in self.nnff_future_times]
-        alpha = self.nnff_alpha_up_down[0 if abs(desired_lateral_accel) > abs(self.nnff_lat_accel_filtered.x) else 1]
+        alpha = self.nnff_alpha_up_down[0 if abs(desired_lateral_accel) > abs(self.nnff_lat_accels_filtered[0].x) else 1]
         for i,(k, dk, v) in enumerate(zip(future_curvatures, future_curvature_rates, future_speeds)):
           self.nnff_lat_accels_filtered[i].update_alpha(alpha)
           self.nnff_lat_jerks_filtered[i].update_alpha(alpha/2)
