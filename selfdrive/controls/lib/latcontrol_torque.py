@@ -37,7 +37,7 @@ class LatControlTorque(LatControl):
     self.torque_from_lateral_accel = CI.torque_from_lateral_accel()
     self.use_steering_angle = self.torque_params.useSteeringAngle
     self.steering_angle_deadzone_deg = self.torque_params.steeringAngleDeadzoneDeg
-    self.error_downscale = 4.0
+    self.error_downscale = 2.0
     self.error_scale_factor = FirstOrderFilter(1.0, 2.5, 0.01)
     self.use_nn = CI.initialize_ff_nn(CP.carFingerprint)
     if self.use_nn:
