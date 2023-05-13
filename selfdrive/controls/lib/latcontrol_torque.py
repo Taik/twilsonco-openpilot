@@ -148,7 +148,6 @@ class LatControlTorque(LatControl):
         friction = self.torque_from_lateral_accel(0.0, self.torque_params,
                                           desired_lateral_accel - actual_lateral_accel,
                                           lateral_accel_deadzone, friction_compensation=True)
-        friction *= self.error_scale_factor.x
         
         nnff_input = [CS.vEgo, lat_accels_filtered[0], lat_jerks_filtered[0], roll] \
                     + [self.lat_accel_deque[0]] + lat_accels_filtered[1:] \
