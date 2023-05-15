@@ -54,7 +54,7 @@ class LatControlTorque(LatControl):
       self.lat_accel_deque = deque(maxlen=history_frames)
       self.lat_jerk_deque = deque(maxlen=history_frames)
       self.roll_deque = deque(maxlen=history_frames)
-      self.nnff_alpha_up_down = [0.4, 0.05] # for increasing/decreasing magnitude of lat accel/jerk
+      self.nnff_alpha_up_down = [0.2, 0.05] # for increasing/decreasing magnitude of lat accel/jerk
       # Scale down desired lateral acceleration under moderate curvature to prevent cutting corners.
 
     self.param_s = Params()
