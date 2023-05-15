@@ -139,7 +139,7 @@ class LatControlTorque(LatControl):
         lat_accels_filtered = [i.x for i in self.nnff_lat_accels_filtered]
         lat_jerks_filtered = [i.x for i in self.nnff_lat_jerks_filtered]
         roll = params.roll
-        future_rolls = [interp(t, T_IDXS, model_data.orientation.x) for t in self.nnff_future_times]
+        future_rolls = [interp(t, T_IDXS, model_data.orientation.x) + roll for t in self.nnff_future_times]
         
         self.lat_accel_deque.append(lat_accels_filtered[0])
         self.lat_jerk_deque.append(lat_jerks_filtered[0])
