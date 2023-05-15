@@ -37,7 +37,7 @@ class LatControlTorque(LatControl):
     self.torque_from_lateral_accel = CI.torque_from_lateral_accel()
     self.use_steering_angle = self.torque_params.useSteeringAngle
     self.steering_angle_deadzone_deg = self.torque_params.steeringAngleDeadzoneDeg
-    self.error_downscale = 2.0
+    self.error_downscale = 3.5
     self.error_scale_factor = FirstOrderFilter(1.0, 2.5, 0.01)
     self.use_nn = CI.initialize_ff_nn(CP.carFingerprint)
     if self.use_nn:
@@ -54,7 +54,7 @@ class LatControlTorque(LatControl):
       self.lat_accel_deque = deque(maxlen=history_frames)
       self.lat_jerk_deque = deque(maxlen=history_frames)
       self.roll_deque = deque(maxlen=history_frames)
-      self.nnff_alpha_up_down = [0.3, 0.15] # for increasing/decreasing magnitude of lat accel/jerk
+      self.nnff_alpha_up_down = [0.4, 0.05] # for increasing/decreasing magnitude of lat accel/jerk
       # Scale down desired lateral acceleration under moderate curvature to prevent cutting corners.
 
     self.param_s = Params()
@@ -117,7 +117,7 @@ class LatControlTorque(LatControl):
         self.error_scale_factor.x = error_scale_factor
       else:
         self.error_scale_factor.update(error_scale_factor)
-      error_rate=(desired_lateral_jerk - actual_lateral_jerk) if self.use_steering_angle else 0.0
+      error_rate=((desired_lateral_jerk - actual_lateral_jerk) * self.error_scale_factor.x) if self.use_steering_angle else 0.0
       error = torque_from_setpoint - torque_from_measurement
       error *= self.error_scale_factor.x
       pid_log.error = error
@@ -154,7 +154,7 @@ class LatControlTorque(LatControl):
                     + [self.lat_jerk_deque[0]] + lat_jerks_filtered[1:] \
                     + [self.roll_deque[0]] + future_rolls
         ff = self.torque_from_nn(nnff_input)
-        ff += friction
+        ff += friction * self.error_scale_factor.x
       else:
         ff = self.torque_from_lateral_accel(gravity_adjusted_lateral_accel, self.torque_params,
                                           desired_lateral_accel - actual_lateral_accel,
