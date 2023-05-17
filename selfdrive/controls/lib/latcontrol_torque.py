@@ -55,7 +55,7 @@ class LatControlTorque(LatControl):
       self.lat_jerk_deque = deque(maxlen=history_frames)
       self.roll_deque = deque(maxlen=history_frames)
       self.nnff_alpha_up_down = [0.2, 0.05] # for increasing/decreasing magnitude of lat accel/jerk
-      self.nnff_linear_ff_factor_bp = [3.0, 10.0] # m/s; linear ff at/below the low speed
+      self.nnff_linear_ff_factor_bp = [6.0, 12.0] # m/s; linear ff at/below the low speed
       self.nnff_linear_ff_factor_v = [1.0, 0.0]
       # Scale down desired lateral acceleration under moderate curvature to prevent cutting corners.
 
