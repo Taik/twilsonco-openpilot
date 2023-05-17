@@ -55,6 +55,8 @@ class LatControlTorque(LatControl):
       self.lat_jerk_deque = deque(maxlen=history_frames)
       self.roll_deque = deque(maxlen=history_frames)
       self.nnff_alpha_up_down = [0.2, 0.05] # for increasing/decreasing magnitude of lat accel/jerk
+      self.nnff_linear_ff_factor_bp = [3.0, 10.0] # m/s; linear ff at/below the low speed
+      self.nnff_linear_ff_factor_v = [1.0, 0.0]
       # Scale down desired lateral acceleration under moderate curvature to prevent cutting corners.
 
     self.param_s = Params()
@@ -117,11 +119,17 @@ class LatControlTorque(LatControl):
         self.error_scale_factor.x = error_scale_factor
       else:
         self.error_scale_factor.update(error_scale_factor)
-      error_rate=((desired_lateral_jerk - actual_lateral_jerk) * self.error_scale_factor.x) if self.use_steering_angle else 0.0
+      
+      error_rate=(desired_lateral_jerk - actual_lateral_jerk) if self.use_steering_angle else 0.0
+      error_rate *= self.error_scale_factor.x
+      
       error = torque_from_setpoint - torque_from_measurement
       error *= self.error_scale_factor.x
       pid_log.error = error
-      
+        
+      ff = self.torque_from_lateral_accel(gravity_adjusted_lateral_accel, self.torque_params,
+                                          desired_lateral_accel - actual_lateral_accel,
+                                          lateral_accel_deadzone, friction_compensation=True)
       if self.use_nn:
         # prepare input data for NNFF model        
         future_speeds = [CS.vEgo] + [math.sqrt(interp(t, T_IDXS, model_data.velocity.x)**2 \
@@ -153,12 +161,11 @@ class LatControlTorque(LatControl):
                     + [self.lat_accel_deque[0]] + lat_accels_filtered[1:] \
                     + [self.lat_jerk_deque[0]] + lat_jerks_filtered[1:] \
                     + [self.roll_deque[0]] + future_rolls
-        ff = self.torque_from_nn(nnff_input)
-        ff += friction * self.error_scale_factor.x
-      else:
-        ff = self.torque_from_lateral_accel(gravity_adjusted_lateral_accel, self.torque_params,
-                                          desired_lateral_accel - actual_lateral_accel,
-                                          lateral_accel_deadzone, friction_compensation=True)
+        nnff = self.torque_from_nn(nnff_input)
+        nnff += friction * self.error_scale_factor.x
+        
+        k = interp(CS.vEgo, self.nnff_linear_ff_factor_bp, self.nnff_linear_ff_factor_v)
+        ff = k * ff + (1.0 - k) * nnff
 
       freeze_integrator = steer_limited or CS.steeringPressed or CS.vEgo < 5
       output_torque = self.pid.update(pid_log.error,
