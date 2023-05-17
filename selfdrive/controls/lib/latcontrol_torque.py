@@ -121,7 +121,7 @@ class LatControlTorque(LatControl):
         self.error_scale_factor.update(error_scale_factor)
       
       error_rate=(desired_lateral_jerk - actual_lateral_jerk) if self.use_steering_angle else 0.0
-      error_rate *= self.error_scale_factor.x
+      error_rate *= (self.error_scale_factor.x + 1.0) * 0.5
       
       error = torque_from_setpoint - torque_from_measurement
       error *= self.error_scale_factor.x
