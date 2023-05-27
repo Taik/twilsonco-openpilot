@@ -161,7 +161,7 @@ class LatControlTorque(LatControl):
         else:
           future_speeds = [CS.vEgo] + [CS.vEgo] * len(self.nnff_future_times)
           future_curvatures = [desired_curvature] + [desired_curvature] * len(self.nnff_future_times)
-          future_rolls = [roll] + [roll] * len(self.nnff_future_times)
+          future_rolls = [roll] * len(self.nnff_future_times)
         
         alpha = self.nnff_alpha_up_down[0 if abs(desired_lateral_accel) > abs(self.nnff_lat_accels_filtered[0].x) else 1]
         self.nnff_lat_jerk_filtered.update_alpha(alpha/2)
