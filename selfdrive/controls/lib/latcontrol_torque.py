@@ -5,11 +5,11 @@ from collections import deque
 from common.filter_simple import FirstOrderFilter
 from common.numpy_fast import interp, sign
 from common.params import Params
-from selfdrive.controls.lib.drive_helpers import apply_deadzone
+from selfdrive.controls.lib.drive_helpers import apply_deadzone, CONTROL_N
 from selfdrive.controls.lib.latcontrol import LatControl
 from selfdrive.controls.lib.pid import PIDController
 from selfdrive.controls.lib.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
-from selfdrive.modeld.constants import T_IDXS
+from selfdrive.modeld.constants import T_IDXS, IDX_N
 
 # At higher speeds (25+mph) we can assume:
 # Lateral acceleration achieved by a specific car correlates to
@@ -152,7 +152,7 @@ class LatControlTorque(LatControl):
         roll = params.roll
         self.roll_deque.append(roll)
         past_rolls = [self.roll_deque[min(len(self.roll_deque)-1, i)] for i in self.history_frame_offsets]
-        if len(model_data.velocity.x) > 0 and len(lat_plan.curvatures) > 0:        
+        if None not in [lat_plan, model_data] and len(model_data.velocity.x) == IDX_N and len(lat_plan.curvatures) == CONTROL_N:        
           future_speeds = [CS.vEgo] + [math.sqrt(interp(t, T_IDXS, model_data.velocity.x)**2 \
                                               + interp(t, T_IDXS, model_data.velocity.y)**2) \
                                                 for t in self.nnff_future_times]
