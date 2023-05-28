@@ -53,7 +53,7 @@ class LatControlTorque(LatControl):
     self.steering_angle_deadzone_deg = self.torque_params.steeringAngleDeadzoneDeg
     self.error_downscale = 3.5
     self.error_scale_factor = FirstOrderFilter(1.0, 2.5, 0.01)
-    self.use_nn = CI.initialize_ff_nn(CP.carFingerprint)
+    self.use_nn = CI.initialize_ff_nn(CP.nnffFingerprint)
     if self.use_nn:
       self.torque_from_nn = CI.get_ff_nn
       # NNFF model takes current v_ego, a_ego, lat_accel, lat_jerk, roll, and past/desired data

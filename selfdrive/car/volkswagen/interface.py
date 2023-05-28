@@ -202,10 +202,12 @@ class CarInterface(CarInterfaceBase):
     elif candidate == CAR.SKODA_KAROQ_MK1:
       ret.mass = 1278 + STD_CARGO_KG
       ret.wheelbase = 2.66
+      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
     elif candidate == CAR.SKODA_KODIAQ_MK1:
       ret.mass = 1569 + STD_CARGO_KG
       ret.wheelbase = 2.79
+      CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
 
     elif candidate == CAR.SKODA_OCTAVIA_MK3:
       ret.mass = 1388 + STD_CARGO_KG
