@@ -57,6 +57,7 @@ class LateralPlanner:
     self.dynamic_lane_profile = int(self.param_s.get("DynamicLaneProfile", encoding="utf8"))
     self.dynamic_lane_profile_status = False
     self.dynamic_lane_profile_status_buffer = False
+    self.dynamic_lane_profile_status_buffer_wait_until_time = 0.0
 
     self.standstill_elapsed = 0.0
     self.standstill = False
@@ -158,17 +159,23 @@ class LateralPlanner:
         return True
       # only while lane change is off
       elif self.DH.lane_change_state == LaneChangeState.off:
+        wait_seconds = 2.0  # seconds to wait before enabling laneful mode
         probability_threshold = 0.85
         # laneline probability too low, we switch to laneless mode
         if (self.LP.lll_prob + self.LP.rll_prob) / 2 < probability_threshold \
           or ((longitudinal_plan.visionCurrentLatAcc > 1.0 or longitudinal_plan.visionMaxPredLatAcc > 1.4)
            and self.vision_curve_laneless):
           self.dynamic_lane_profile_status_buffer = True
+          # Reset the time we need to wait until we can return laneful mode
+          self.dynamic_lane_profile_status_buffer_wait_until_time = sec_since_boot() + wait_seconds
         if (self.LP.lll_prob + self.LP.rll_prob) / 2 > probability_threshold \
           and ((longitudinal_plan.visionCurrentLatAcc < 0.6 and longitudinal_plan.visionMaxPredLatAcc < 0.7)
            or not self.vision_curve_laneless):
           self.dynamic_lane_profile_status_buffer = False
         if self.dynamic_lane_profile_status_buffer:  # in buffer mode, always laneless
+          return True
+        # No longer in buffer mode, but minimum wait time is not over, we return laneless mode
+        if sec_since_boot() < self.dynamic_lane_profile_status_buffer_wait_until_time:
           return True
     return False
 
