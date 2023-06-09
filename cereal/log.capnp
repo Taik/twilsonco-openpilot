@@ -2019,6 +2019,12 @@ struct LiveTorqueParametersData {
   points @10 :List(List(Float32));
   version @11 :Int32;
   useParams @12 :Bool;
+  liveKf @13 :Float32;
+  liveKfLatAccelRatio @14 :Float32;
+  liveKfShift @15 :Float32;
+  liveKfNumPoints @16 :Int32;
+  liveKfPoints @17 :List(List(Float32));
+  liveKfLatJerkFiltered @18 :Float32;
 }
 
 struct LiveMapDataDEPRECATED {
