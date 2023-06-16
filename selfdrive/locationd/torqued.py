@@ -84,6 +84,7 @@ class LiveKF:
       self.offline_kf = CP.lateralTuning.pid.kf
     else:
       raise ValueError('lateralTuning must be torque or pid')
+    self.offline_kf = clip(self.offline_kf, self.kf_limits[0], self.kf_limits[1])
     self.kf = FirstOrderFilter(self.offline_kf, self.kf_alpha, DT_MDL)
     
     self.reset()
@@ -142,7 +143,7 @@ class LiveKF:
     # If kf was perfect, then the weighted mean lat accel ratio would be 1.0.
     # If the ratio is > 1, then kf needs to increase, or decrease if the ratio is < 1.
     self.kf_shift = (self.weighted_mean_lat_accel_ratio - 1.0) * self.total_num_points / self.max_num_points * DT_MDL
-    kf_last = self.kf.x
+    kf_last = clip(self.kf.x, self.kf_limits[0], self.kf_limits[1])
     self.kf.update(self.kf.x + self.kf_shift)
     self.kf.x = clip(self.kf.x, self.kf_limits[0], self.kf_limits[1])
     
