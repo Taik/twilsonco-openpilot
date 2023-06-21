@@ -1122,7 +1122,7 @@ EVENTS: Dict[int, Dict[str, Union[Alert, AlertCallbackType]]] = {
   EventName.torqueNNFFNotLoaded: {
   ET.PERMANENT: Alert(
     "e2e NN torque controller not loaded",
-    "car not found",
+    "go donate logs to twilsonco to get loaded!",
     AlertStatus.userPrompt, AlertSize.mid,
     Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 6.0),
   },
