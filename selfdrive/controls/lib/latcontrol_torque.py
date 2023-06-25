@@ -136,7 +136,6 @@ class LatControlTorque(LatControl):
       error_rate *= (self.error_scale_factor.x + 1.0) * 0.5
       
       error = torque_from_setpoint - torque_from_measurement
-      error *= self.error_scale_factor.x
       pid_log.error = error
         
       ff = self.torque_from_lateral_accel(gravity_adjusted_lateral_accel, self.torque_params,
@@ -179,7 +178,6 @@ class LatControlTorque(LatControl):
 
       freeze_integrator = steer_limited or CS.steeringPressed or CS.vEgo < 5
       output_torque = self.pid.update(pid_log.error,
-                                      error_rate=error_rate,
                                       feedforward=ff,
                                       speed=CS.vEgo,
                                       freeze_integrator=freeze_integrator)
