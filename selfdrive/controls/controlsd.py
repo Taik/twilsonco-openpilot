@@ -169,6 +169,8 @@ class Controls:
       self.LaC = LatControlINDI(self.CP, self.CI)
     elif self.CP.lateralTuning.which() == 'torque':
       self.LaC = LatControlTorque(self.CP, self.CI)
+    self.saturation_count_max = int(round(self.CP.steerLimitTimer / DT_CTRL))
+    self.saturation_count = 0
 
     self.initialized = False
     self.state = State.disabled
@@ -709,7 +711,11 @@ class Controls:
         good_speed = CS.vEgo > 5
         max_torque = abs(self.last_actuators.steer) > 0.99
         if undershooting and turning and good_speed and max_torque:
-          lac_log.active and self.events.add(EventName.steerSaturated)
+          self.saturation_count += 1
+          if self.saturation_count > self.saturation_count_max:
+            self.events.add(EventName.steerSaturated)
+        else:
+          self.saturation_count = 0
       elif lac_log.saturated:
         dpath_points = lat_plan.dPathPoints
         if len(dpath_points):
@@ -724,7 +730,11 @@ class Controls:
           right_deviation = steering_value < 0 and dpath_points[0] > 0.20
 
           if left_deviation or right_deviation:
-            self.events.add(EventName.steerSaturated)
+            self.saturation_count += 1
+            if self.saturation_count > self.saturation_count_max:
+              self.events.add(EventName.steerSaturated)
+          else:
+            self.saturation_count = 0
 
     # Ensure no NaNs/Infs
     for p in ACTUATOR_FIELDS:
