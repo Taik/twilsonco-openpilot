@@ -124,19 +124,9 @@ class LatControlTorque(LatControl):
       torque_from_measurement = self.torque_from_lateral_accel(measurement, self.torque_params, measurement,
                                                      lateral_accel_deadzone, friction_compensation=False)
       
-      # error downscaling before entering curves
-      max_future_lateral_accel = max([abs(i) * CS.vEgo**2 for i in list(lat_plan.curvatures)[LAT_PLAN_MIN_IDX:16]] + [abs(desired_curvature)])
-      error_scale_factor = 1.0 / (1.0 + min(apply_deadzone(abs(lookahead_lateral_jerk), 0.5) * self.error_downscale, self.error_downscale - 1))
-      if error_scale_factor < self.error_scale_factor.x:
-        self.error_scale_factor.x = error_scale_factor
-      else:
-        self.error_scale_factor.update(error_scale_factor)
-      
-      error_rate = 0 if lookahead_lateral_jerk == 0.0 else (lookahead_lateral_jerk - actual_lateral_jerk) if self.use_steering_angle else 0.0
-      error_rate *= (self.error_scale_factor.x + 1.0) * 0.5
-      
       error = torque_from_setpoint - torque_from_measurement
-      error *= self.error_scale_factor.x
+      error_scale_factor = 1.0 / min(0.5 * (0.33*abs(desired_lateral_accel) + 0.5*abs(lookahead_lateral_jerk)) + 1.0, self.error_downscale)
+      error *= error_scale_factor
       pid_log.error = error
         
       ff = self.torque_from_lateral_accel(gravity_adjusted_lateral_accel, self.torque_params,
@@ -145,21 +135,17 @@ class LatControlTorque(LatControl):
       if self.use_nn:
         # prepare input data for NNFF model        
         roll = params.roll
-        if None not in [lat_plan, model_data] and len(model_data.velocity.x) == IDX_N and len(lat_plan.curvatures) == CONTROL_N:        
-          future_speeds = [CS.vEgo] + [math.sqrt(interp(t, T_IDXS, model_data.velocity.x)**2 \
-                                              + interp(t, T_IDXS, model_data.velocity.y)**2) \
-                                                for t in self.nnff_future_times]
-          future_curvatures = [desired_curvature] + [interp(t, T_IDXS, lat_plan.curvatures) for t in self.nnff_future_times]
+        if None not in [lat_plan, model_data] and all([len(i) >= CONTROL_N for i in [model_data.orientation.x, lat_plan.curvatures]]):
+          future_lat_accels = [desired_lateral_accel] + [interp(t, T_IDXS, lat_plan.curvatures) * CS.vEgo ** 2 for t in self.nnff_future_times]
           future_rolls = [interp(t, T_IDXS, model_data.orientation.x) + roll for t in self.nnff_future_times]
         else:
-          future_speeds = [CS.vEgo] + [CS.vEgo] * len(self.nnff_future_times)
-          future_curvatures = [desired_curvature] + [desired_curvature] * len(self.nnff_future_times)
+          future_lat_accels = [desired_lateral_accel] + [desired_lateral_accel] * len(self.nnff_future_times)
           future_rolls = [roll] * len(self.nnff_future_times)
         
         alpha = self.nnff_alpha_up_down[0 if abs(desired_lateral_accel) > abs(self.nnff_lat_accels_filtered[0].x) else 1]
-        for i,(k, v) in enumerate(zip(future_curvatures, future_speeds)):
+        for i,v in enumerate(future_lat_accels):
           self.nnff_lat_accels_filtered[i].update_alpha(alpha)
-          self.nnff_lat_accels_filtered[i].update(k * v ** 2)
+          self.nnff_lat_accels_filtered[i].update(v)
         
         lat_accels_filtered = [i.x for i in self.nnff_lat_accels_filtered]
         
@@ -172,14 +158,12 @@ class LatControlTorque(LatControl):
                     + lat_accels_filtered[1:] \
                     + future_rolls
         nnff = self.torque_from_nn(nnff_input)
-        nnff += friction * self.error_scale_factor.x
+        nnff += friction * error_scale_factor
         
-        k = interp(CS.vEgo, self.nnff_linear_ff_factor_bp, self.nnff_linear_ff_factor_v)
-        ff = k * ff + (1.0 - k) * nnff
+        ff = nnff
 
       freeze_integrator = steer_limited or CS.steeringPressed or CS.vEgo < 5
       output_torque = self.pid.update(pid_log.error,
-                                      error_rate=error_rate,
                                       feedforward=ff,
                                       speed=CS.vEgo,
                                       freeze_integrator=freeze_integrator)
@@ -191,7 +175,6 @@ class LatControlTorque(LatControl):
       pid_log.f = self.pid.f
       if self.use_nn:
         pid_log.nnffInput = nnff_input
-      pid_log.errorScaleFactor = self.error_scale_factor.x
       pid_log.output = -output_torque
       pid_log.actualLateralAccel = actual_lateral_accel
       pid_log.desiredLateralAccel = desired_lateral_accel
