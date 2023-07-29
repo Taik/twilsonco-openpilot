@@ -196,7 +196,6 @@ class CarInterfaceBase(ABC):
     self.gac_max = -1
     self.reverse_dm_cam = self.param_s.get_bool("ReverseDmCam")
     self.mads_main_toggle = self.param_s.get_bool("MadsCruiseMain")
-    self.lkas_toggle = self.param_s.get_bool("LkasToggle")
       
   def get_ff_nn(self, x):
     return self.lat_torque_nnff_model.evaluate(x)
