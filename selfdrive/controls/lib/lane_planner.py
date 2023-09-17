@@ -47,6 +47,7 @@ class LanePlanner:
     self.lane_width_estimate = FirstOrderFilter(3.2, 9.95, DT_MDL)
     self.lane_width = 3.2
     self.lane_change_multiplier = 1
+    self.ultimate_path = np.zeros((TRAJECTORY_SIZE,))
 
     self.lll_prob = 0.
     self.rll_prob = 0.
