@@ -171,7 +171,7 @@ class LatControlTorque(LatControl):
         
         # compute NN error response        
         lat_jerk_deadzone = 0.35
-        lateral_jerk_error = 0.0 if abs(lookahead_lateral_jerk) <= lat_jerk_deadzone else (0.1 * apply_deadzone(lookahead_lateral_jerk - self.actual_lateral_jerk.x, lat_jerk_deadzone))
+        lateral_jerk_error = 0.0 if self.use_steering_angle or abs(lookahead_lateral_jerk) <= lat_jerk_deadzone else (0.1 * apply_deadzone(lookahead_lateral_jerk - actual_lateral_jerk, lat_jerk_deadzone))
 
         friction_input = error + lateral_jerk_error
         nn_error_input = [CS.vEgo, error, friction_input, 0.0] \
