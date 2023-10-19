@@ -5,7 +5,7 @@ import numpy as np
 from cereal import log
 from openpilot.common.numpy_fast import interp
 from openpilot.common.params import Params
-from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
+from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, apply_deadzone
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
 from openpilot.selfdrive.controls.lib.pid import PIDController
 from openpilot.selfdrive.controls.lib.vehicle_model import ACCELERATION_DUE_TO_GRAVITY
@@ -169,10 +169,10 @@ class LatControlTorque(LatControl):
         future_error_func = get_predict_error_func(past_errors + [error], self.past_times + [0.0])
         future_errors = future_error_func(self.nn_future_times_np).tolist()
         
-        desired_lateral_jerk = (future_planned_lateral_accels[0] - desired_lateral_accel) / self.nn_future_times[0]
-        
-        # compute NN error response
-        lateral_jerk_error = 0.05 * (lookahead_lateral_jerk - actual_lateral_jerk)
+        # compute NN error response        
+        lat_jerk_deadzone = 0.35
+        lateral_jerk_error = 0.0 if abs(lookahead_lateral_jerk) <= lat_jerk_deadzone else (0.1 * apply_deadzone(lookahead_lateral_jerk - self.actual_lateral_jerk.x, lat_jerk_deadzone))
+
         friction_input = error + lateral_jerk_error
         nn_error_input = [CS.vEgo, error, friction_input, 0.0] \
                               + past_errors + future_errors
@@ -180,6 +180,7 @@ class LatControlTorque(LatControl):
         
         # compute feedforward (same as nn setpoint output)
         
+        lookahead_lateral_jerk = apply_deadzone(lookahead_lateral_jerk, lat_jerk_deadzone)
         nn_input = [CS.vEgo, desired_lateral_accel, lookahead_lateral_jerk, roll] \
                               + past_lateral_accels_desired + future_planned_lateral_accels \
                               + past_rolls + future_rolls
@@ -188,7 +189,7 @@ class LatControlTorque(LatControl):
         # apply friction override for cars with low NN friction response
         if self.nn_friction_override:
           pid_log.error += self.torque_from_lateral_accel(0.0, self.torque_params,
-                                            error,
+                                            friction_input,
                                             lateral_accel_deadzone, friction_compensation=True)
           ff += self.torque_from_lateral_accel(0.0, self.torque_params,
                                             lookahead_lateral_jerk,
